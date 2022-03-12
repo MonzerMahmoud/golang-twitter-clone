@@ -78,6 +78,7 @@ func Register(fullName string, username string, email string, password string) m
 			{Value: username, Valid: "username"},
 			{Value: email, Valid: "email"},
 			{Value: password, Valid: "password"},
+			{Value: fullName, Valid: "fullname"},
 		})
 
 	if valid {
