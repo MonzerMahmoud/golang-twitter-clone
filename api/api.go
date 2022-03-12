@@ -37,6 +37,7 @@ func readBody(r *http.Request) []byte {
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	body, err := ioutil.ReadAll(r.Body)
 	helpers.HandleErr(err)
 
