@@ -8,8 +8,8 @@ import (
 func main() {
 	//router.InitializeRouter()
 	//migrations.Migrate()
-	api.InitializeRouter()
 	migrations.Migrate()
+	api.InitializeRouter()
 }
 
 
