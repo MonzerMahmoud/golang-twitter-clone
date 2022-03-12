@@ -1,11 +1,13 @@
 package users
 
 import (
+	
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"golang-twitter-clone/helpers"
 	"golang-twitter-clone/interfaces"
+
+	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
 
