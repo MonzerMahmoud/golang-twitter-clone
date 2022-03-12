@@ -26,3 +26,8 @@ type ResponseUser struct {
 	Email string
 	Username string
 }
+
+type Validation struct {
+	Value string
+	Valid string
+}
