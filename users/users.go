@@ -1,7 +1,7 @@
 package users
 
 import (
-	
+	"fmt"
 	"time"
 
 	"golang-twitter-clone/helpers"
@@ -10,6 +10,40 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
+
+func prepareResponse(user *interfaces.User, withToken bool) map[string]interface{} {
+	responseUser := &interfaces.ResponseUser{
+		ID:       user.ID,
+		FullName: user.FullName,
+		Email:    user.Email,
+		Username: user.Username,
+	}
+
+	var response = map[string]interface{}{"message": "All is fine"}
+
+	if withToken {
+		var token = prepareToken(user)
+		response["token"] = token
+	}
+
+	response["data"] = responseUser
+
+	return response
+}
+
+func prepareToken(user *interfaces.User) string {
+	tokenContent := jwt.MapClaims{
+		"user_id": user.ID,
+		"exp":     time.Now().Add(time.Hour * 1).Unix(),
+	}
+
+	jwtToken := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tokenContent)
+	token, err := jwtToken.SignedString([]byte("secret-key"))
+
+	helpers.HandleErr(err)
+
+	return token
+}
 
 func Login(email string, password string) map[string]interface{} {
 
@@ -35,43 +69,12 @@ func Login(email string, password string) map[string]interface{} {
 
 		defer db.Close()
 
-		var response = prepareResponse(user)
+		var response = prepareResponse(user, true)
 
 		return response
 	} else {
 		return map[string]interface{}{"message": "not valid values"}
 	}
-}
-
-func prepareResponse(user *interfaces.User) map[string]interface{} {
-	responseUser := &interfaces.ResponseUser{
-		ID:       user.ID,
-		FullName: user.FullName,
-		Email:    user.Email,
-		Username: user.Username,
-	}
-
-	var token = prepareToken(user)
-
-	var response = map[string]interface{}{"message": "All is fine"}
-	response["data"] = responseUser
-	response["token"] = token
-
-	return response
-}
-
-func prepareToken(user *interfaces.User) string {
-	tokenContent := jwt.MapClaims{
-		"user_id": user.ID,
-		"exp":     time.Now().Add(time.Hour * 1).Unix(),
-	}
-
-	jwtToken := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tokenContent)
-	token, err := jwtToken.SignedString([]byte("secret-key"))
-
-	helpers.HandleErr(err)
-
-	return token
 }
 
 func Register(fullName string, username string, email string, password string) map[string]interface{} {
@@ -92,11 +95,39 @@ func Register(fullName string, username string, email string, password string) m
 
 		defer db.Close()
 
-		var response = prepareResponse(user)
+		var response = prepareResponse(user, true)
 
 		return response
 
 	} else {
 		return map[string]interface{}{"message": "not valid values"}
 	}
+}
+
+func GetUser(id string, jwt string) map[string]interface{} {
+
+	isValid := helpers.ValidateToken(id, jwt)
+	if isValid {
+		fmt.Println("Token is valid")
+		db := helpers.ConnectDB()
+		user := &interfaces.User{}
+		
+		if db.Where("id = ?", id).First(&user).RecordNotFound() {
+			return map[string]interface{}{"message": "User not found"}
+		}
+
+		defer db.Close()
+
+		var response = prepareResponse(user, false)
+		return response
+	} else {
+		fmt.Println("Token is not valid")
+		return map[string]interface{}{"message": "Not valid token"}
+	}
+}
+
+func updateUsername(id string, username string) {
+	db := helpers.ConnectDB()
+	db.Model(&interfaces.User{}).Where("id = ?", id).Update("username", username)
+	defer db.Close()
 }
