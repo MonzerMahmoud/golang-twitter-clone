@@ -1,90 +1,51 @@
 package users
 
 import (
-	// "strings"
-	// "time"
+ 	"time"
 
-	// "github.com/bnkamalesh/errors"
+    "golang-twitter-clone/helpers"
+    "golang-twitter-clone/interfaces"
+    "github.com/dgrijalva/jwt-go"
+    "golang.org/x/crypto/bcrypt"
 )
 
-type User struct {
-	FirstName string `json:"firstName,omitempty"`
-	LastName  string `json:"lastName,omitempty"`
-	Email     string `json:"email,omitempty"`
-	Mobile	string `json:"mobile,omitempty"`
-	// CreatedAt *time.Time `json:"createdAt,omitempty"`
-	// UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+func Login(email string, password string) map[string]interface{} {
+
+	db := helpers.ConnectDB()
+	user := &interfaces.User{}
+
+	if db.Where("email = ?", email).First(&user).RecordNotFound() {
+		return map[string]interface{}{"message": "User not found"}
+	}
+
+	passErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+
+	if passErr == bcrypt.ErrMismatchedHashAndPassword && passErr != nil {
+		return map[string]interface{}{"message": "Invalid password"}
+	}
+
+	responseUser := &interfaces.ResponseUser{
+		ID: user.ID,
+		FullName: user.FullName,
+		Email: user.Email,
+		Username: user.Username,
+	}
+
+	defer db.Close()
+
+	tokenContent := jwt.MapClaims{
+		"user_id": user.ID,
+		"exp": time.Now().Add(time.Hour * 1).Unix(),
+	}
+
+	jwtToken := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tokenContent)
+	token, err := jwtToken.SignedString([]byte("secret-key"))
+
+	helpers.HandleErr(err)
+
+	var response = map[string]interface{}{"message": "All is fine"}
+	response["data"] = responseUser
+	response["token"] = token
+
+	return response
 }
-
-// func (u *User) setDefaults() {
-// 	now := time.Now()
-// 	if u.CreatedAt == nil {
-// 		u.CreatedAt = &now
-// 	}
-
-// 	if u.UpdatedAt == nil {
-// 		u.UpdatedAt = &now
-// 	}
-// }
-
-// func (u *User) Sanitize() {
-// 	u.FirstName = strings.TrimSpace(u.FirstName)
-// 	u.LastName = strings.TrimSpace(u.LastName)
-// 	u.Email = strings.TrimSpace(u.Email)
-// 	u.Mobile = strings.TrimSpace(u.Mobile)
-// }
-
-// func (u *User) Validate() error {
-
-// 	if u.FirstName == "" {
-// 		return errors.Validation("First name is required")
-// 	}
-
-// 	if u.LastName == "" {
-// 		return errors.Validation("Last name is required")
-// 	}
-
-// 	err := validateEmail(u.Email)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	err = validateMobile(u.Mobile)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
-
-// func validateEmail(email string) error {
-// 	if email == "" {
-// 		return errors.Validation("Email is required")
-// 	}
-// 	parts := strings.Split(email, "@")
-// 	if len(parts) != 2 {
-// 		return errors.New("Invalid email")
-// 	}
-
-// 	if parts[0] == "" {
-// 		return errors.New("Invalid email")
-// 	}
-
-// 	if parts[1] == "" {
-// 		return errors.New("Invalid email")
-// 	}
-
-// 	return nil
-// }
-
-// func validateMobile(mobile string) error {
-// 	if mobile == "" {
-// 		return errors.Validation("Mobile is required")
-// 	}
-
-// 	if len(mobile) != 10 {
-// 		return errors.New("Invalid mobile number")
-// 	}
-
-// 	return nil
-// }
