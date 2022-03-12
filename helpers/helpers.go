@@ -2,10 +2,11 @@ package helpers
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/jinzhu/gorm"
-	"golang.org/x/crypto/bcrypt"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func HandleErr(err error) {
@@ -26,7 +27,8 @@ func HashPassword(password string) string {
 func ConnectDB() *gorm.DB {
 	fmt.Println("Connecting to DB")
 	//db, err := gorm.Open("postgres", "host=localhost port=5432 user=postgres dbname=Twitter-Clone sslmode=disable")
-	db, err := gorm.Open("postgres", "host=ec2-54-158-26-89.compute-1.amazonaws.com port=5432 user=mchmkgthfrusfo dbname=das0j74cai8cer sslmode=disable password=d8c321a53c3d4e617295b89bb6ad45a5a95ab3c8850f122f8ac71bc8e6bef1ef")
+	//db, err := gorm.Open("postgres", "host=ec2-54-158-26-89.compute-1.amazonaws.com port=5432 user=mchmkgthfrusfo dbname=das0j74cai8cer sslmode=disable password=d8c321a53c3d4e617295b89bb6ad45a5a95ab3c8850f122f8ac71bc8e6bef1ef")
+	db, err := gorm.Open("postgres", os.Getenv("DATABASE_URL"))
 	HandleErr(err)
 	return db
 }
