@@ -1,45 +1,31 @@
 package migrations
 
 import (
-	"fmt"
+	"golang-twitter-clone/database"
 	"golang-twitter-clone/helpers"
 	"golang-twitter-clone/interfaces"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-func createTweets() {
-	// Todo : Implement this
-	fmt.Println("Creating tweets")
+func createDefaultAccount() {
 
-	db := helpers.ConnectDB()
-
-	users := &[2]interfaces.User{
-		{ FullName: "John Doe", Email: "John@Doe.com", Password: "password"},
-		{ FullName: "Jane Doe", Email: "Jane@Doe.com", Password: "password"},
+	user := &interfaces.User{
+		FullName: "Monzer Mahmoud",
+		Email:    "Monzer@Mahmoud.com",
+		Username: "@monzer97",
+		Password: helpers.HashPassword("123456"),
 	}
-
-	for i := 0; i < len(users); i++ {
-		generatedPassword := helpers.HashPassword(users[i].Password)
-		user := &interfaces.User{ FullName: users[i].FullName, Email: users[i].Email, Password: generatedPassword}
-		db.Create(&user)
-
-		tweets := &interfaces.Tweet{Body: "Welcome to twitter", UserID: user.ID}
-		db.Create(&tweets)
-	}
-
-	defer db.Close()
-
+	database.DB.Create(&user)
 }
 
 func Migrate() {
-	db := helpers.ConnectDB()
-	db.AutoMigrate(&interfaces.User{})
-	db.AutoMigrate(&interfaces.Tweet{})
-	db.AutoMigrate(&interfaces.Follow{})
-	defer db.Close()
+	User := &interfaces.User{}
+	Tweet := &interfaces.Tweet{}
+	Follow := &interfaces.Follow{}
+	database.DB.AutoMigrate(&User, &Tweet, &Follow)
 
-	//createTweets()
+	createDefaultAccount()
 }
 
 

@@ -6,13 +6,11 @@ import (
 	"golang-twitter-clone/interfaces"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,16 +28,6 @@ func HashPassword(password string) string {
 	HandleErr(err)
 
 	return string(hashed)
-}
-
-func ConnectDB() *gorm.DB {
-	DBURL := os.Getenv("DATABASE_URL")
-	if DBURL == "" {
-		DBURL = "host=localhost port=5432 user=postgres dbname=Twitter-Clone sslmode=disable"
-	}
-	db, err := gorm.Open("postgres", DBURL)
-	HandleErr(err)
-	return db
 }
 
 func Validation(values []interfaces.Validation) bool{

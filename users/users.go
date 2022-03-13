@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"golang-twitter-clone/database"
 	"golang-twitter-clone/helpers"
 	"golang-twitter-clone/interfaces"
 
@@ -56,10 +57,9 @@ func Login(email string, password string) map[string]interface{} {
 		})
 
 	if valid {
-		db := helpers.ConnectDB()
 		user := &interfaces.User{}
 
-		if db.Where("email = ?", email).First(&user).RecordNotFound() {
+		if database.DB.Where("email = ?", email).First(&user).RecordNotFound() {
 			return map[string]interface{}{"message": "User not found"}
 		}
 
@@ -68,8 +68,6 @@ func Login(email string, password string) map[string]interface{} {
 		if passErr == bcrypt.ErrMismatchedHashAndPassword && passErr != nil {
 			return map[string]interface{}{"message": "Invalid password"}
 		}
-
-		defer db.Close()
 
 		var response = prepareResponse(user, true)
 
@@ -89,15 +87,11 @@ func Register(fullName string, username string, email string, password string) m
 		})
 
 	if valid {
-		db := helpers.ConnectDB()
-
 		generatedPassword := helpers.HashPassword(password)
 		user := &interfaces.User{FullName: fullName, Email: email, Password: generatedPassword, Username: username, Following: 0, Followers: 0}
-		db.Create(&user)
+		database.DB.Create(&user)
 
-		defer db.Close()
-
-		var response = prepareResponse(user, true)
+		var response = prepareResponse(user, false)
 
 		return response
 
@@ -115,29 +109,25 @@ func GetUser(id string, jwt string) map[string]interface{} {
 	}
 }
 func GetOwnerUser(id string) map[string]interface{} {
-	db := helpers.ConnectDB()
+	
 	user := &interfaces.User{}
 
-	if db.Where("id = ?", id).First(&user).RecordNotFound() {
+	if database.DB.Where("id = ?", id).First(&user).RecordNotFound() {
 		return map[string]interface{}{"message": "User not found"}
 	}
-
-	defer db.Close()
 
 	var response = prepareResponse(user, false)
 	return response
 }
 
 func getOtherUser(id string) map[string]interface{} {
-	db := helpers.ConnectDB()
+	
 	user := &interfaces.User{}
 	userModified := &interfaces.User{}
 
-	if db.Where("id = ?", id).First(&user).RecordNotFound() {
+	if database.DB.Where("id = ?", id).First(&user).RecordNotFound() {
 		return map[string]interface{}{"message": "User not found"}
 	}
-
-	defer db.Close()
 
 	userModified.ID = user.ID
 	userModified.FullName = user.FullName
@@ -148,9 +138,7 @@ func getOtherUser(id string) map[string]interface{} {
 }
 
 func updateUsername(id string, username string) {
-	db := helpers.ConnectDB()
-	db.Model(&interfaces.User{}).Where("id = ?", id).Update("username", username)
-	defer db.Close()
+	database.DB.Model(&interfaces.User{}).Where("id = ?", id).Update("username", username)
 }
 
 func Follow(followerId uint, followeeId uint, jwt string) map[string]interface{} {
@@ -171,23 +159,21 @@ func Follow(followerId uint, followeeId uint, jwt string) map[string]interface{}
 			}
 
 			follow := &interfaces.Follow{}
-			db := helpers.ConnectDB()
-			if db.Where("follower_id = ? AND followee_id = ?", followerId, followeeId).First(&follow).RecordNotFound() {
+			
+			if database.DB.Where("follower_id = ? AND followee_id = ?", followerId, followeeId).First(&follow).RecordNotFound() {
 				follow := &interfaces.Follow{FollowerID: followerId, FolloweeID: followeeId}
-				db.Create(&follow)
+				database.DB.Create(&follow)
 
-				db.Model(&interfaces.User{}).Where("id = ?", followerId).Update("following", gorm.Expr("following + ?", 1))
-				db.Model(&interfaces.User{}).Where("id = ?", followeeId).Update("followers", gorm.Expr("followers + ?", 1))
+				database.DB.Model(&interfaces.User{}).Where("id = ?", followerId).Update("following", gorm.Expr("following + ?", 1))
+				database.DB.Model(&interfaces.User{}).Where("id = ?", followeeId).Update("followers", gorm.Expr("followers + ?", 1))
 
 			} else {
-				db.Delete(&follow)
-				db.Unscoped().Delete(&follow)
+				database.DB.Delete(&follow)
+				database.DB.Unscoped().Delete(&follow)
 
-				db.Model(&interfaces.User{}).Where("id = ?", followerId).Update("following", gorm.Expr("following - ?", 1))
-				db.Model(&interfaces.User{}).Where("id = ?", followeeId).Update("followers", gorm.Expr("followers - ?", 1))
+				database.DB.Model(&interfaces.User{}).Where("id = ?", followerId).Update("following", gorm.Expr("following - ?", 1))
+				database.DB.Model(&interfaces.User{}).Where("id = ?", followeeId).Update("followers", gorm.Expr("followers - ?", 1))
 			}
-
-			defer db.Close()
 
 			return map[string]interface{}{"message": "All is fine"}
 
