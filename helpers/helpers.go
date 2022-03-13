@@ -84,8 +84,13 @@ func ValidateToken(id string, jwtToken string) bool {
 }
 
 func GetUserIdFromToken(jwtToken string) string {
+	cleanJWT := strings.Replace(jwtToken, "Bearer ", "", -1)
 	tokenData := jwt.MapClaims{}
-	fmt.Println(tokenData)
-	fmt.Println(tokenData["user_id"])
-	return fmt.Sprintf("%v", tokenData["user_id"])
+	
+	_, err := jwt.ParseWithClaims(cleanJWT, tokenData, func(token *jwt.Token) (interface{}, error) {
+		return []byte("secret-key"), nil
+	})
+	HandleErr(err)
+
+	return strconv.Itoa(int(tokenData["user_id"].(float64)))
 }

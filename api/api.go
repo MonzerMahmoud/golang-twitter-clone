@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	//"fmt"
+	"fmt"
 
 	"strconv"
 
@@ -77,6 +77,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	userId := params["id"]
 	auth := r.Header.Get("Authorization")
+	fmt.Println(helpers.GetUserIdFromToken(auth))
 	user := users.GetUser(userId, auth)
 	apiResponse(user, w)
 }
@@ -86,15 +87,9 @@ func follow(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	
 	auth := r.Header.Get("Authorization")
-	body := readBody(r)
 
-	var formattedBody map[string]interface{}
-	err := json.Unmarshal(body, &formattedBody)
+	followerId, err := strconv.ParseUint(helpers.GetUserIdFromToken(auth), 10, 64)
 	helpers.HandleErr(err)
-
-	followerId, err := strconv.ParseUint(formattedBody["id"].(string), 10, 64)
-	helpers.HandleErr(err)
-
 	followeeId, err := strconv.ParseUint(params["id"], 10, 64)
 	helpers.HandleErr(err)
 
