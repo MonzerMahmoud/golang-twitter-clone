@@ -33,14 +33,16 @@ func createTweets() {
 }
 
 func Migrate() {
-	fmt.Println("Migrating")
 	db := helpers.ConnectDB()
 	db.AutoMigrate(&interfaces.User{})
 	db.AutoMigrate(&interfaces.Tweet{})
+	db.AutoMigrate(&interfaces.Follow{})
 	defer db.Close()
 
-	createTweets()
+	//createTweets()
 }
+
+
 
 
 

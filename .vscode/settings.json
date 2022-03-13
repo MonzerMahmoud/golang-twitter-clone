@@ -1,3 +1,11 @@
 {
-  "cSpell.ignoreWords": ["bnkamalesh", "dgrijalva", "gorm", "jinzhu", "signup"]
+  "cSpell.ignoreWords": [
+    "Followee",
+    "Unscoped",
+    "bnkamalesh",
+    "dgrijalva",
+    "gorm",
+    "jinzhu",
+    "signup"
+  ]
 }

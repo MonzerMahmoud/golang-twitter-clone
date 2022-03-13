@@ -8,6 +8,7 @@ import (
 	"golang-twitter-clone/interfaces"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -17,6 +18,7 @@ func prepareResponse(user *interfaces.User, withToken bool) map[string]interface
 		FullName: user.FullName,
 		Email:    user.Email,
 		Username: user.Username,
+		
 	}
 
 	var response = map[string]interface{}{"message": "All is fine"}
@@ -90,7 +92,7 @@ func Register(fullName string, username string, email string, password string) m
 		db := helpers.ConnectDB()
 
 		generatedPassword := helpers.HashPassword(password)
-		user := &interfaces.User{FullName: fullName, Email: email, Password: generatedPassword, Username: username}
+		user := &interfaces.User{FullName: fullName, Email: email, Password: generatedPassword, Username: username, Following: 0, Followers: 0}
 		db.Create(&user)
 
 		defer db.Close()
@@ -105,29 +107,96 @@ func Register(fullName string, username string, email string, password string) m
 }
 
 func GetUser(id string, jwt string) map[string]interface{} {
-
 	isValid := helpers.ValidateToken(id, jwt)
 	if isValid {
-		fmt.Println("Token is valid")
-		db := helpers.ConnectDB()
-		user := &interfaces.User{}
-		
-		if db.Where("id = ?", id).First(&user).RecordNotFound() {
-			return map[string]interface{}{"message": "User not found"}
-		}
-
-		defer db.Close()
-
-		var response = prepareResponse(user, false)
-		return response
+		return GetOwnerUser(id)
 	} else {
-		fmt.Println("Token is not valid")
-		return map[string]interface{}{"message": "Not valid token"}
+		return getOtherUser(id)
 	}
+}
+func GetOwnerUser(id string) map[string]interface{} {
+	db := helpers.ConnectDB()
+	user := &interfaces.User{}
+
+	if db.Where("id = ?", id).First(&user).RecordNotFound() {
+		return map[string]interface{}{"message": "User not found"}
+	}
+
+	defer db.Close()
+
+	var response = prepareResponse(user, false)
+	return response
+}
+
+func getOtherUser(id string) map[string]interface{} {
+	db := helpers.ConnectDB()
+	user := &interfaces.User{}
+	userModified := &interfaces.User{}
+
+	if db.Where("id = ?", id).First(&user).RecordNotFound() {
+		return map[string]interface{}{"message": "User not found"}
+	}
+
+	defer db.Close()
+
+	userModified.ID = user.ID
+	userModified.FullName = user.FullName
+	userModified.Username = user.Username
+
+	var response = prepareResponse(userModified, false)
+	return response
 }
 
 func updateUsername(id string, username string) {
 	db := helpers.ConnectDB()
 	db.Model(&interfaces.User{}).Where("id = ?", id).Update("username", username)
 	defer db.Close()
+}
+
+func Follow(followerId uint, followeeId uint, jwt string) map[string]interface{} {
+
+	if followerId != followeeId {
+		followerIdString := fmt.Sprint(followerId)
+		followingIdString := fmt.Sprint(followeeId)
+
+		isValid := helpers.ValidateToken(followerIdString, jwt)
+
+		if isValid {
+
+			followerAccount := GetUser(followerIdString, jwt)
+			followingAccount := GetUser(followingIdString, jwt)
+
+			if followerAccount["message"] == "User not found" || followingAccount["message"] == "User not found" {
+				return map[string]interface{}{"message": "User not found"}
+			}
+
+			follow := &interfaces.Follow{}
+			db := helpers.ConnectDB()
+			if db.Where("follower_id = ? AND followee_id = ?", followerId, followeeId).First(&follow).RecordNotFound() {
+				follow := &interfaces.Follow{FollowerID: followerId, FolloweeID: followeeId}
+				db.Create(&follow)
+
+				db.Model(&interfaces.User{}).Where("id = ?", followerId).Update("following", gorm.Expr("following + ?", 1))
+				db.Model(&interfaces.User{}).Where("id = ?", followeeId).Update("followers", gorm.Expr("followers + ?", 1))
+
+			} else {
+				db.Delete(&follow)
+				db.Unscoped().Delete(&follow)
+
+				db.Model(&interfaces.User{}).Where("id = ?", followerId).Update("following", gorm.Expr("following - ?", 1))
+				db.Model(&interfaces.User{}).Where("id = ?", followeeId).Update("followers", gorm.Expr("followers - ?", 1))
+			}
+
+			defer db.Close()
+
+			return map[string]interface{}{"message": "All is fine"}
+
+		} else {
+
+			return map[string]interface{}{"message": "Not valid token"}
+		}
+	} else {
+		return map[string]interface{}{"message": "You can't follow yourself"}
+	}
+
 }

@@ -33,9 +33,6 @@ func HashPassword(password string) string {
 }
 
 func ConnectDB() *gorm.DB {
-	fmt.Println("Connecting to DB")
-	//db, err := gorm.Open("postgres", "host=localhost port=5432 user=postgres dbname=Twitter-Clone sslmode=disable")
-	//db, err := gorm.Open("postgres", "host=ec2-54-158-26-89.compute-1.amazonaws.com port=5432 user=mchmkgthfrusfo dbname=das0j74cai8cer sslmode=disable password=d8c321a53c3d4e617295b89bb6ad45a5a95ab3c8850f122f8ac71bc8e6bef1ef")
 	DBURL := os.Getenv("DATABASE_URL")
 	if DBURL == "" {
 		DBURL = "host=localhost port=5432 user=postgres dbname=Twitter-Clone sslmode=disable"
@@ -96,4 +93,11 @@ func ValidateToken(id string, jwtToken string) bool {
 	} else {
 		return false
 	}
+}
+
+func GetUserIdFromToken(jwtToken string) string {
+	tokenData := jwt.MapClaims{}
+	fmt.Println(tokenData)
+	fmt.Println(tokenData["user_id"])
+	return fmt.Sprintf("%v", tokenData["user_id"])
 }

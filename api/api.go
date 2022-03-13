@@ -2,7 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
+	//"fmt"
+
+	"strconv"
+
 	"golang-twitter-clone/helpers"
 	"golang-twitter-clone/interfaces"
 	"golang-twitter-clone/users"
@@ -74,9 +77,29 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	userId := params["id"]
 	auth := r.Header.Get("Authorization")
-	fmt.Println(auth)
 	user := users.GetUser(userId, auth)
 	apiResponse(user, w)
+}
+
+func follow(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	
+	auth := r.Header.Get("Authorization")
+	body := readBody(r)
+
+	var formattedBody map[string]interface{}
+	err := json.Unmarshal(body, &formattedBody)
+	helpers.HandleErr(err)
+
+	followerId, err := strconv.ParseUint(formattedBody["id"].(string), 10, 64)
+	helpers.HandleErr(err)
+
+	followeeId, err := strconv.ParseUint(params["id"], 10, 64)
+	helpers.HandleErr(err)
+
+	follow := users.Follow(uint(followerId), uint(followeeId), auth)
+	apiResponse(follow, w)
 }
 
 func InitializeRouter() {
@@ -86,6 +109,7 @@ func InitializeRouter() {
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/register", register).Methods("POST")
 	router.HandleFunc("/users/{id}", getUser).Methods("GET")
+	router.HandleFunc("/users/{id}/follow", follow).Methods("POST")
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

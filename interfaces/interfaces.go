@@ -10,6 +10,8 @@ type User struct {
 	Email     string `json:"email,omitempty"`
 	Password string `json:"password,omitempty"`
 	Username string `json:"username,omitempty"`
+	Following int `json:"following,omitempty"`
+	Followers int `json:"followers,omitempty"`
 }
 
 type Tweet struct {
@@ -18,6 +20,12 @@ type Tweet struct {
 	UserID uint `json:"userId,omitempty"`
 	//User User `json:"user,omitempty"`
 	// CreatedAt *time.Time `json:"createdAt,omitempty"`
+}
+
+type Follow struct {
+	gorm.Model
+	FollowerID uint `json:"followerId,omitempty"`
+	FolloweeID uint `json:"followeeId,omitempty"`
 }
 
 type ResponseUser struct {
