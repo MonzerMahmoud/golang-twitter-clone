@@ -148,7 +148,7 @@ func Follow(followerId uint, followeeId uint, jwt string) map[string]interface{}
 		followingIdString := fmt.Sprint(followeeId)
 
 		isValid := helpers.ValidateToken(followerIdString, jwt)
-
+		
 		if isValid {
 
 			followerAccount := GetUser(followerIdString, jwt)
@@ -159,7 +159,6 @@ func Follow(followerId uint, followeeId uint, jwt string) map[string]interface{}
 			}
 
 			follow := &interfaces.Follow{}
-			
 			if database.DB.Where("follower_id = ? AND followee_id = ?", followerId, followeeId).First(&follow).RecordNotFound() {
 				follow := &interfaces.Follow{FollowerID: followerId, FolloweeID: followeeId}
 				database.DB.Create(&follow)
@@ -167,15 +166,16 @@ func Follow(followerId uint, followeeId uint, jwt string) map[string]interface{}
 				database.DB.Model(&interfaces.User{}).Where("id = ?", followerId).Update("following", gorm.Expr("following + ?", 1))
 				database.DB.Model(&interfaces.User{}).Where("id = ?", followeeId).Update("followers", gorm.Expr("followers + ?", 1))
 
+				return map[string]interface{}{"message": "Followed successfully"} 
 			} else {
 				database.DB.Delete(&follow)
 				database.DB.Unscoped().Delete(&follow)
 
 				database.DB.Model(&interfaces.User{}).Where("id = ?", followerId).Update("following", gorm.Expr("following - ?", 1))
 				database.DB.Model(&interfaces.User{}).Where("id = ?", followeeId).Update("followers", gorm.Expr("followers - ?", 1))
+			
+				return map[string]interface{}{"message": "Unfollowed successfully"}
 			}
-
-			return map[string]interface{}{"message": "All is fine"}
 
 		} else {
 

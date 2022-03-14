@@ -1,6 +1,7 @@
 package migrations
 
 import (
+	"fmt"
 	"golang-twitter-clone/database"
 	"golang-twitter-clone/helpers"
 	"golang-twitter-clone/interfaces"
@@ -20,6 +21,7 @@ func createDefaultAccount() {
 }
 
 func Migrate() {
+	fmt.Println("Migrating...")
 	User := &interfaces.User{}
 	Tweet := &interfaces.Tweet{}
 	Follow := &interfaces.Follow{}

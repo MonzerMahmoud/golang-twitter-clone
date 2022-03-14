@@ -83,6 +83,22 @@ func ValidateToken(id string, jwtToken string) bool {
 	}
 }
 
+func ValidateTokenExp(jwtToken string) bool {
+	cleanJWT := strings.Replace(jwtToken, "Bearer ", "", -1)
+	tokenData := jwt.MapClaims{}
+	
+	token, err := jwt.ParseWithClaims(cleanJWT, tokenData, func(token *jwt.Token) (interface{}, error) {
+		return []byte("secret-key"), nil
+	})
+	HandleErr(err)
+
+	if token.Valid {
+		return true
+	} else {
+		return false
+	}
+}
+
 func GetUserIdFromToken(jwtToken string) string {
 	cleanJWT := strings.Replace(jwtToken, "Bearer ", "", -1)
 	tokenData := jwt.MapClaims{}

@@ -1,6 +1,8 @@
 package interfaces
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -33,6 +35,14 @@ type ResponseUser struct {
 	FullName string
 	Email string
 	Username string
+}
+
+type ResponseTweet struct {
+	ID uint
+	Body string
+	UserID uint
+	User User
+	CreatedAt time.Time
 }
 
 type Validation struct {

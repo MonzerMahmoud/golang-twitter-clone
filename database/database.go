@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"golang-twitter-clone/helpers"
 	"os"
 
@@ -10,6 +11,7 @@ import (
 var DB *gorm.DB
 
 func InitDatabase() {
+	fmt.Println("Initializing database...")
 	DBURL := os.Getenv("DATABASE_URL")
 	if DBURL == "" {DBURL = "host=localhost port=5432 user=postgres dbname=Twitter-Clone sslmode=disable"}
 	database, err := gorm.Open("postgres", DBURL)

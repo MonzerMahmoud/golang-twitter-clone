@@ -8,6 +8,7 @@ import (
 
 	"golang-twitter-clone/helpers"
 	"golang-twitter-clone/interfaces"
+	"golang-twitter-clone/tweets"
 	"golang-twitter-clone/users"
 	"io/ioutil"
 	"log"
@@ -97,7 +98,20 @@ func follow(w http.ResponseWriter, r *http.Request) {
 	apiResponse(follow, w)
 }
 
+func getTimeLine(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	auth := r.Header.Get("Authorization")
+	userId, err := strconv.ParseUint(helpers.GetUserIdFromToken(auth), 10, 64)
+	helpers.HandleErr(err)
+
+	user := tweets.GetTimeLine(uint(userId), auth)
+	
+	json.NewEncoder(w).Encode(user)
+}
+
 func InitializeRouter() {
+	fmt.Println("Initializing router...")
 	router := mux.NewRouter()
 
 	router.Use(helpers.PanicHandler)
@@ -105,6 +119,7 @@ func InitializeRouter() {
 	router.HandleFunc("/register", register).Methods("POST")
 	router.HandleFunc("/users/{id}", getUser).Methods("GET")
 	router.HandleFunc("/users/{id}/follow", follow).Methods("POST")
+	router.HandleFunc("/tweets/timeline", getTimeLine).Methods("GET")
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
