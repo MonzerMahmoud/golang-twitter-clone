@@ -11,6 +11,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
+	log "github.com/sirupsen/logrus"
 )
 
 func prepareResponse(user *interfaces.User, withToken bool) map[string]interface{} {
@@ -60,19 +61,33 @@ func Login(email string, password string) map[string]interface{} {
 		user := &interfaces.User{}
 
 		if database.DB.Where("email = ?", email).First(&user).RecordNotFound() {
+			log.WithFields(log.Fields{
+				"email": email,
+			}).Warn("User is not registered")
 			return map[string]interface{}{"message": "User not found"}
 		}
 
 		passErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 
 		if passErr == bcrypt.ErrMismatchedHashAndPassword && passErr != nil {
+			log.WithFields(log.Fields{
+				"email": email,
+			}).Warn("Invalid password provided for user") 
 			return map[string]interface{}{"message": "Invalid password"}
 		}
+
+		log.WithFields(log.Fields{
+			"email": email,
+		}).Info("User logged in")
 
 		var response = prepareResponse(user, true)
 
 		return response
 	} else {
+		log.WithFields(log.Fields{
+			"email":     email,
+			"password": password,
+		}).Warn("Credentials are not valid")
 		return map[string]interface{}{"message": "not valid values"}
 	}
 }
@@ -90,12 +105,22 @@ func Register(fullName string, username string, email string, password string) m
 		generatedPassword := helpers.HashPassword(password)
 		user := &interfaces.User{FullName: fullName, Email: email, Password: generatedPassword, Username: username, Following: 0, Followers: 0}
 		database.DB.Create(&user)
+		log.WithFields(log.Fields{
+			"email": email,
+			"username": username,
+			"fullname": fullName,
+		}).Info("User registered")
 
 		var response = prepareResponse(user, false)
 
 		return response
 
 	} else {
+		log.WithFields(log.Fields{
+			"username": username,
+			"email": email,
+			"full name": fullName,
+		}).Warn("Credentials are not valid")
 		return map[string]interface{}{"message": "not valid values"}
 	}
 }
@@ -113,6 +138,9 @@ func GetOwnerUser(id string) map[string]interface{} {
 	user := &interfaces.User{}
 
 	if database.DB.Where("id = ?", id).First(&user).RecordNotFound() {
+		log.WithFields(log.Fields{
+			"id": id,
+		}).Warn("User not found for the owner")
 		return map[string]interface{}{"message": "User not found"}
 	}
 
@@ -126,6 +154,9 @@ func getOtherUser(id string) map[string]interface{} {
 	userModified := &interfaces.User{}
 
 	if database.DB.Where("id = ?", id).First(&user).RecordNotFound() {
+		log.WithFields(log.Fields{
+			"id": id,
+		}).Warn("User not found")
 		return map[string]interface{}{"message": "User not found"}
 	}
 
@@ -166,6 +197,11 @@ func Follow(followerId uint, followeeId uint, jwt string) map[string]interface{}
 				database.DB.Model(&interfaces.User{}).Where("id = ?", followerId).Update("following", gorm.Expr("following + ?", 1))
 				database.DB.Model(&interfaces.User{}).Where("id = ?", followeeId).Update("followers", gorm.Expr("followers + ?", 1))
 
+				log.WithFields(log.Fields{
+					"followerId": followerId,
+					"followeeId": followeeId,
+				}).Info("User followed")
+
 				return map[string]interface{}{"message": "Followed successfully"} 
 			} else {
 				database.DB.Delete(&follow)
@@ -174,6 +210,11 @@ func Follow(followerId uint, followeeId uint, jwt string) map[string]interface{}
 				database.DB.Model(&interfaces.User{}).Where("id = ?", followerId).Update("following", gorm.Expr("following - ?", 1))
 				database.DB.Model(&interfaces.User{}).Where("id = ?", followeeId).Update("followers", gorm.Expr("followers - ?", 1))
 			
+				log.WithFields(log.Fields{
+					"followerId": followerId,
+					"followeeId": followeeId,
+				}).Info("User unfollowed")
+				
 				return map[string]interface{}{"message": "Unfollowed successfully"}
 			}
 

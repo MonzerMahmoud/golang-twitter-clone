@@ -4,15 +4,16 @@ import (
 	"golang-twitter-clone/api"
 	"golang-twitter-clone/database"
 	"golang-twitter-clone/migrations"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
-	//router.InitializeRouter()
-	//migrations.Migrate()
-	//migrations.Migrate()
+	
 	database.InitDatabase()
 	migrations.Migrate()
 	api.InitializeRouter()
+	log.SetFormatter(&log.JSONFormatter{})
+	log.Info("Server started")
 
 }
 
