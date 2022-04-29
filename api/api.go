@@ -16,6 +16,7 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
+	
 )
 
 type Login struct {
@@ -105,9 +106,9 @@ func getTimeLine(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.ParseUint(helpers.GetUserIdFromToken(auth), 10, 64)
 	helpers.HandleErr(err)
 
-	user := tweets.GetTimeLine(uint(userId), auth)
+	tweets := tweets.GetTimeLine(uint(userId), auth)
 	
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(tweets)
 }
 
 func InitializeRouter() {

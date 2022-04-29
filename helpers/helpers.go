@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"golang-twitter-clone/interfaces"
@@ -9,11 +10,19 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	redis "github.com/go-redis/redis/v8"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var cache = redis.NewClient(&redis.Options{
+	Addr: "localhost:6379",
+})
+
+var ctx = context.Background()
 
 func HandleErr(err error) {
 	if err != nil {
@@ -109,4 +118,29 @@ func GetUserIdFromToken(jwtToken string) string {
 	HandleErr(err)
 
 	return strconv.Itoa(int(tokenData["user_id"].(float64)))
+}
+
+func SetTweetCache(tweet interfaces.Tweet) {
+	cacheErr := cache.Set(ctx, strconv.Itoa(int(tweet.ID)), tweet, time.Second*5).Err()
+	HandleErr(cacheErr)
+}
+
+func GetTweetCache(id string) interfaces.Tweet {
+	var tweet interfaces.Tweet
+	cacheErr := cache.Get(ctx, id).Scan(&tweet)
+	HandleErr(cacheErr)
+
+	return tweet
+}
+
+func ValidateCache(id string) bool {
+	var tweet interfaces.Tweet
+	cacheErr := cache.Get(ctx, id).Scan(&tweet)
+	HandleErr(cacheErr)
+
+	if tweet.ID == 0 {
+		return false
+	} else {
+		return true
+	}
 }
